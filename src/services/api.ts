@@ -37,10 +37,49 @@ export function createHttpApi(baseUrl: string): HarveyApi {
   };
   return {
     async getLocalStatus(endpoint) {
+      try {
+        const r = await fetch(`${baseUrl}/api/v1/models/status`);
+        if (r.ok) {
+          const res = await r.json();
+          const d = res.data;
+          return {
+            connected: d.ollama_online ?? false,
+            endpoint,
+            activeModel: d.model_available ? d.model_name : null,
+            embeddingsReady: true,
+            embeddingModel: "all-MiniLM-L6-v2",
+            hardware: null,
+            lastChecked: new Date().toISOString(),
+          };
+        }
+      } catch {
+        // Backend unavailable; fallback to direct daemon probe
+      }
       const connected = await ping(`${endpoint}/api/tags`);
       return { connected, endpoint, activeModel: null, embeddingsReady: false, embeddingModel: null, hardware: null, lastChecked: new Date().toISOString() };
     },
-    async listModels() { return demoModels; },
+    async listModels() {
+      try {
+        const r = await fetch(`${baseUrl}/api/v1/models/status`);
+        if (r.ok) {
+          const res = await r.json();
+          const d = res.data;
+          if (d && d.details && Array.isArray(d.details.installed_models)) {
+            return d.details.installed_models.map((name: string) => ({
+              name,
+              size: "4.7 GB",
+              family: "Qwen",
+              installed: true,
+              recommended: name.includes("qwen2.5"),
+              contextLength: 8192,
+            }));
+          }
+        }
+      } catch {
+        /* fallback to demo models */
+      }
+      return demoModels;
+    },
     async getInferenceHistory() { return demoInference; },
     generateDraft: (req) => post("/outreach/draft", req),
     analyzeReply: (messages) => post("/replies/analyze", { messages }),

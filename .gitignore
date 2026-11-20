@@ -27,6 +27,17 @@ dist-ssr
 .DS_Store
 *.suo
 *.ntvs*
-*.njsproj
-*.sln
 *.sw?
+
+# Local SQLite databases and caches
+data/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*$py.class
+.coverage
+htmlcov/
+.env
+
+# Upstream reference clone
+harvey_upstream/
